@@ -1,0 +1,115 @@
+<?php
+
+/**
+ *	Author: Boriana Ditcheva					December 2013
+ */
+
+ 
+ 
+/**
+ *  Implementation of hook_menu() which desclares the two form pages and the page where a user
+ *	can see their results
+ */
+function bd_multi_form_menu() {
+  $items['form_page1'] = array(
+    'title' => 'Form Page 1',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bd_multi_form_1'),
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+ 
+  $items['form_page2'] = array(
+    'title' => 'Form Page 2',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bd_multi_form_2'),
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+ 
+  $items['form_results'] = array(
+    'title' => 'Your results',
+    'page callback' => 'bd_multi_form_display_results',
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+
+/**
+ *	The two forms, for the two separate form pages
+ */
+function bd_multi_form_1($form, &$form_state) {
+  $form['bd_multi_form_1'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Your name'),
+    '#description' => t('What is your full name?'),
+    '#required' => TRUE,
+  );
+  $form['bd_multi_form_1_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Next'),
+  );
+  return $form;
+}
+
+function bd_multi_form_2($form, &$form_state) {
+  $form['bd_multi_form_2'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Your email address'),
+    '#description' => t('Where can we reach you?'),
+    '#required' => TRUE,
+  );
+  $form['bd_multi_form_2_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+  return $form;
+}
+
+
+/**
+ *  The actual submit handlers.  Without these, we can render the forms, but not save them
+ */
+function bd_multi_form_1_submit($form, &$form_state) {
+  $object = (object) array(
+	// Currently we only store one value in the first page
+    'name' => $form_state['values']['bd_multi_form_1']
+  );
+  ctools_include('object-cache');
+  ctools_object_cache_set('submission', 'bd_multi_form_submission', $object);
+  $form_state['redirect'] = 'form_page2';
+}
+
+function bd_multi_form_2_submit($form, &$form_state) {
+  ctools_include('object-cache');
+  $object = ctools_object_cache_get('submission', 'bd_multi_form_submission');
+  // Only other value stored in the second page
+  $object->email = $form_state['values']['bd_multi_form_2'];
+  
+  // The first parameter is a string that defines what kind of an object you are storing (mainly used to avoid collisions). The second one is the name of the object you are storing and the third is the object itself.
+  ctools_object_cache_set('submission', 'bd_multi_form_submission', $object);
+  $form_state['redirect'] = 'form_results';
+}
+
+
+/**
+ *  The display results screen callback
+ */
+function bd_multi_form_display_results() {
+  ctools_include('object-cache');
+  $object = ctools_object_cache_get('submission', 'bd_multi_form_submission');
+  ctools_object_cache_clear('submission', 'bd_multi_form_submission');
+  if ($object) {
+    return array(
+      '#markup' => 'Your name: ' . $object->name . '<br />Your email: ' . $object->email,
+    );
+  }
+  else {
+    drupal_goto('form_page1');
+  }
+}
+
+

@@ -1,0 +1,6 @@
+name = BD Multi-step form
+description = Custom Module to illustrate a multi-step form
+core = 7.x
+package = BD
+
+dependencies[] = ctools
